@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Nossos modelos de dados começam aqui
+
+model Championship {
+  id          String   @id @default(cuid())
+  name        String
+  logoUrl     String?
+  format      String // "KNOCKOUT", "ROUND_ROBIN", "GROUP_KNOCKOUT"
+  confrontationMode  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teams       Team[]
+  groups      Group[]
+  games       Game[]
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  championshipId String
+  championship   Championship @relation(fields: [championshipId], references: [id])
+
+  groupId       String?
+  group         Group?  @relation(fields: [groupId], references: [id])
+
+  homeGames     Game[]  @relation("HomeTeam")
+  awayGames     Game[]  @relation("AwayTeam")
+  goalsScored   Goal[]
+}
+
+model Group {
+  id            String @id @default(cuid())
+  name          String // "Grupo A", "Grupo B", etc.
+
+  championshipId String
+  championship   Championship @relation(fields: [championshipId], references: [id])
+
+  teams         Team[]
+  games         Game[]
+}
+
+model Game {
+  id              String   @id @default(cuid())
+  round           Int      // Rodada 1, 2, Oitavas, Quartas, etc.
+  homeTeamScore   Int?
+  awayTeamScore   Int?
+  yellowCards     Int      @default(0)
+  redCards        Int      @default(0)
+  gameDate        DateTime?
+
+  championshipId  String
+  championship    Championship @relation(fields: [championshipId], references: [id])
+
+  homeTeamId      String
+  homeTeam        Team   @relation("HomeTeam", fields: [homeTeamId], references: [id])
+
+  awayTeamId      String
+  awayTeam        Team   @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  goals           Goal[]
+
+  groupId         String?
+  group           Group?  @relation(fields: [groupId], references: [id])
+}
+
+model Goal {
+  id          String @id @default(cuid())
+  minute      Int?
+
+  gameId      String
+  game        Game   @relation(fields: [gameId], references: [id])
+
+  scorerId    String
+  scorer      Team   @relation(fields: [scorerId], references: [id])
+}
